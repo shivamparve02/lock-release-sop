@@ -150,7 +150,7 @@
   <div class="header-icon">&#128274;</div>
   <div>
     <h1>Lock Release Process Map</h1>
-    <p>/tmp/locking/qad_lock_mon.log &nbsp;&middot;&nbsp; Medline Production</p>
+    <p>/tmp/locking/qad_lock_mon.log</p>
   </div>
   <div class="header-tags">
     <span class="tag green">&#9679; All Shifts Active</span>
@@ -168,9 +168,10 @@
     <div class="nav-item" onclick="openCard('s2',this)" style="--c:#d29922"><span class="nav-dot f" style="color:#d29922"></span>Lock Alert Detected<span class="nav-num">02</span></div>
     <div class="nav-item" onclick="openCard('s3',this)"><span class="nav-dot f" style="color:#f85149"></span>180s Threshold<span class="nav-num">03</span></div>
     <div class="nav-item" onclick="openCard('s4',this)"><span class="nav-dot f" style="color:#a371f7"></span>ABL Stack Trace<span class="nav-num">04</span></div>
-    <div class="nav-item" onclick="openCard('s5',this)"><span class="nav-dot f" style="color:#a371f7"></span>Check Program &amp; User<span class="nav-num">05</span></div>
-    <div class="nav-item" onclick="openCard('s6',this)"><span class="nav-dot f" style="color:#a371f7"></span>Grep PID Process<span class="nav-num">06</span></div>
-    <div class="nav-item" onclick="openCard('s7',this)"><span class="nav-dot f" style="color:#d29922"></span>Determine Case<span class="nav-num">07</span></div>
+    <div class="nav-item" onclick="openCard('s5',this)"><span class="nav-dot f" style="color:#a371f7"></span>Grep PID Process<span class="nav-num">05</span></div>
+    <div class="nav-item" onclick="openCard('s5b',this)"><span class="nav-dot f" style="color:#f85149"></span>Check Program &amp; User<span class="nav-num">05b</span></div>
+    <div class="nav-item" onclick="openCard('s6',this)"><span class="nav-dot f" style="color:#d29922"></span>Determine Case<span class="nav-num">06</span></div>
+    <div class="nav-item" onclick="openCard('s7',this)"><span class="nav-dot f" style="color:#3fb950"></span>Generate Protrace<span class="nav-num">07</span></div>
     <div class="nav-item" onclick="openCard('s8',this)"><span class="nav-dot f" style="color:#3fb950"></span>Disconnect PID<span class="nav-num">08</span></div>
     <div class="nav-item" onclick="openCard('s9',this)"><span class="nav-dot" style="color:#58a6ff"></span>Resume Monitoring<span class="nav-num">09</span></div>
     <div style="margin:12px 16px 0">
@@ -315,39 +316,13 @@ RECID <span class="num">1307660250</span> (ABL) Blocking Usr <span class="num">3
       <div class="card-head" onclick="toggle('s5')">
         <div class="step-badge b-purple">05</div>
         <div class="card-info">
-          <div class="card-title">Check program name &amp; user — MANDATORY</div>
-          <div class="card-sub">Run ABL command before disconnecting any PID</div>
-        </div>
-        <span class="chevron">&#9660;</span>
-      </div>
-      <div class="card-body">
-        <div class="alert"><span class="ico">&#128680;</span><span><strong>This step is mandatory and must never be skipped.</strong> Always verify the program name and user ID before disconnecting. Run the command for <strong>both the blocker and waiter PIDs</strong>.</span></div>
-        <p class="bd" style="margin-top:10px">Replace <code style="font-family:'Courier New',monospace;color:#79c0ff;font-size:12px">8314</code> with the actual PID number of the blocker or waiter:</p>
-        <div class="sec-lbl">ABL Command &mdash; Check Program Name &amp; User</div>
-        <div class="code"><span class="cm">/* Replace 8314 with the actual PID number */</span>
-<span class="kw">FIND FIRST</span> _connect <span class="kw">where</span> _Connect-Pid = <span class="num">8314</span> <span class="kw">no-lock no-error</span>.
-<span class="kw">if available</span> _connect <span class="kw">then do</span>:
-  <span class="kw">find last</span> mon_mstr <span class="kw">where</span> mon__qadi01 = _Connect-Usr <span class="kw">no-lock no-error</span>.
-  <span class="kw">message</span> mon_userid mon_program .
-<span class="kw">end</span>.</div>
-        <div class="ibox blue"><span class="ico">&#128203;</span><span><strong>mon_userid</strong> &mdash; the logged-in user of this session&nbsp;&nbsp;|&nbsp;&nbsp;<strong>mon_program</strong> &mdash; the program currently running. Cross-reference with the ABL stack trace from Step 04.</span></div>
-      </div>
-    </div>
-
-    <div class="conn"><div class="conn-line"></div></div>
-
-    <!-- ── STEP 6 ────────────────────────────────── -->
-    <div class="card" id="s6" style="--ac:#a371f7">
-      <div class="card-head" onclick="toggle('s6')">
-        <div class="step-badge b-purple">06</div>
-        <div class="card-info">
           <div class="card-title">Grep process details of PIDs</div>
           <div class="card-sub">ps -ef | grep &lt;PID&gt; &nbsp;&mdash;&nbsp; run for both blocker &amp; waiter</div>
         </div>
         <span class="chevron">&#9660;</span>
       </div>
       <div class="card-body">
-        <p class="bd">Use the following OS command to identify the process type of both the blocker and the waiter PIDs. This is the key input for determining which case applies in Step 07.</p>
+        <p class="bd">Use the following OS command to identify the process type of both the blocker and the waiter PIDs. This determines which case applies in Step 06.</p>
         <div class="code"><span class="cm"># Run for BOTH blocker and waiter PIDs</span>
 ps -ef | grep -i &lt;PID&gt;
 
@@ -360,16 +335,42 @@ ps -ef | grep -i <span class="num">22573</span></div>
           <span style="background:#1e1700;border:1px solid #3d2e00;border-radius:5px;padding:4px 12px;font-size:11px;color:#d29922;font-family:'Courier New',monospace">appserver agent</span>
           <span style="background:#1f0c0c;border:1px solid #3d1212;border-radius:5px;padding:4px 12px;font-size:11px;color:#f85149;font-family:'Courier New',monospace">as-mrp &#9733;</span>
         </div>
-        <div class="ibox amber"><span class="ico">&#9888;</span><span><strong>as-mrp</strong> is a special case (Case 6) &mdash; if both PIDs are as-mrp, contact the Medline DBA before taking any action.</span></div>
+        <div class="ibox amber"><span class="ico">&#9888;</span><span><strong>as-mrp</strong> is a special case (Case 6). If both PIDs are as-mrp, proceed to Step 05b to check program name &amp; user before contacting the Medline DBA.</span></div>
       </div>
     </div>
 
     <div class="conn"><div class="conn-line"></div></div>
 
-    <!-- ── STEP 7 ────────────────────────────────── -->
-    <div class="card" id="s7" style="--ac:#d29922">
-      <div class="card-head" onclick="toggle('s7')">
-        <div class="step-badge b-amber">07</div>
+    <!-- ── STEP 5b ─── as-mrp only ───────────────── -->
+    <div class="card" id="s5b" style="--ac:#f85149">
+      <div class="card-head" onclick="toggle('s5b')">
+        <div class="step-badge b-red" style="font-size:9px">05b</div>
+        <div class="card-info">
+          <div class="card-title">Check program name &amp; user &mdash; as-mrp locks only</div>
+          <div class="card-sub">Run ABL command only when both PIDs are as-mrp</div>
+        </div>
+        <span class="chevron">&#9660;</span>
+      </div>
+      <div class="card-body">
+        <div class="ibox amber"><span class="ico">&#9888;</span><span><strong>This step applies only to as-mrp locks (Case 6).</strong> For all other process types, skip this step and proceed directly to Step 06.</span></div>
+        <p class="bd" style="margin-top:10px">Replace <code style="font-family:'Courier New',monospace;color:#79c0ff;font-size:12px">8314</code> with the actual PID number of the blocker or waiter:</p>
+        <div class="sec-lbl">ABL Command &mdash; Check Program Name &amp; User</div>
+        <div class="code"><span class="cm">/* Replace 8314 with the actual PID number */</span>
+<span class="kw">FIND FIRST</span> _connect <span class="kw">where</span> _Connect-Pid = <span class="num">8314</span> <span class="kw">no-lock no-error</span>.
+<span class="kw">if available</span> _connect <span class="kw">then do</span>:
+  <span class="kw">find last</span> mon_mstr <span class="kw">where</span> mon__qadi01 = _Connect-Usr <span class="kw">no-lock no-error</span>.
+  <span class="kw">message</span> mon_userid mon_program .
+<span class="kw">end</span>.</div>
+        <div class="ibox blue"><span class="ico">&#128203;</span><span><strong>mon_userid</strong> &mdash; the logged-in user of this session&nbsp;&nbsp;|&nbsp;&nbsp;<strong>mon_program</strong> &mdash; the program currently running. Share these details with the Medline DBA before any action is taken.</span></div>
+      </div>
+    </div>
+
+    <div class="conn"><div class="conn-line"></div></div>
+
+    <!-- ── STEP 6 ────────────────────────────────── -->
+    <div class="card" id="s6" style="--ac:#d29922">
+      <div class="card-head" onclick="toggle('s6')">
+        <div class="step-badge b-amber">06</div>
         <div class="card-info">
           <div class="card-title">Determine the case &amp; take action</div>
           <div class="card-sub">Match blocker &amp; waiter process types to one of 6 cases</div>
@@ -448,18 +449,57 @@ ps -ef | grep -i <span class="num">22573</span></div>
 
     <div class="conn"><div class="conn-line"></div></div>
 
-    <!-- ── STEP 8 ────────────────────────────────── -->
-    <div class="card" id="s8" style="--ac:#3fb950">
-      <div class="card-head" onclick="toggle('s8')">
-        <div class="step-badge b-green">08</div>
+    <!-- ── STEP 7 ── Generate Protrace & Move ──── -->
+    <div class="card" id="s7" style="--ac:#3fb950">
+      <div class="card-head" onclick="toggle('s7')">
+        <div class="step-badge b-green">07</div>
         <div class="card-info">
-          <div class="card-title">Pre-disconnect checklist &amp; execute disconnect</div>
-          <div class="card-sub">Complete all items before disconnecting the PID</div>
+          <div class="card-title">Generate protrace &amp; move to backup directory</div>
+          <div class="card-sub">Run before disconnecting &mdash; sudo kill -SIGUSR1 &lt;PID&gt;</div>
         </div>
         <span class="chevron">&#9660;</span>
       </div>
       <div class="card-body">
-        <p class="bd" style="margin-bottom:10px">Confirm every item below before executing the disconnection. Click each item to mark it complete.</p>
+        <div class="alert"><span class="ico">&#128680;</span><span><strong>Always generate and save the protrace before disconnecting any PID.</strong> This captures a snapshot of the session state for audit and troubleshooting purposes.</span></div>
+
+        <div class="sec-lbl">Step 1 &mdash; Generate the protrace</div>
+        <p class="bd">Send the SIGUSR1 signal to the PID to generate its protrace file. Replace <code style="font-family:'Courier New',monospace;color:#79c0ff;font-size:12px">&lt;PID&gt;</code> with the actual blocker PID:</p>
+        <div class="code"><span class="cm"># Generate protrace of the PID before disconnection</span>
+sudo kill -SIGUSR1 &lt;PID&gt;
+
+<span class="cm"># Example:</span>
+sudo kill -SIGUSR1 <span class="num">22573</span></div>
+
+        <div class="sec-lbl">Step 2 &mdash; Locate the protrace file</div>
+        <p class="bd">The protrace file is generated in the following directory:</p>
+        <div class="code">/tmp/mfgwork/protrace.xxxxx</div>
+        <div class="ibox blue"><span class="ico">&#128193;</span><span>The filename will be <strong>protrace.&lt;PID&gt;</strong> or similar. Confirm the file exists in <code style="font-family:'Courier New',monospace;font-size:11px">/tmp/mfgwork/</code> before moving it.</span></div>
+
+        <div class="sec-lbl">Step 3 &mdash; Move protrace to backup location</div>
+        <p class="bd">Move the generated protrace file to the designated backup monitoring directory:</p>
+        <div class="code"><span class="cm"># Move the protrace file to the backup directory</span>
+sudo mv /tmp/mfgwork/protrace.xxxxx /ext2/backup/monitoring/scanner/
+
+<span class="cm"># Example with actual PID:</span>
+sudo mv /tmp/mfgwork/protrace.<span class="num">22573</span> /ext2/backup/monitoring/scanner/</div>
+        <div class="ibox green"><span class="ico">&#9989;</span><span>Once the protrace is safely moved to <code style="font-family:'Courier New',monospace;font-size:11px">/ext2/backup/monitoring/scanner/</code>, proceed to Step 08 to disconnect the PID.</span></div>
+      </div>
+    </div>
+
+    <div class="conn"><div class="conn-line"></div></div>
+
+    <!-- ── STEP 8 ── Disconnect PID ───────────────── -->
+    <div class="card" id="s8" style="--ac:#3fb950">
+      <div class="card-head" onclick="toggle('s8')">
+        <div class="step-badge b-green">08</div>
+        <div class="card-info">
+          <div class="card-title">Disconnect the PID using script</div>
+          <div class="card-sub">Run user_disconnect_QAD.sh &mdash; only after protrace is saved</div>
+        </div>
+        <span class="chevron">&#9660;</span>
+      </div>
+      <div class="card-body">
+        <p class="bd" style="margin-bottom:10px">Before running the disconnect script, confirm all of the following. Click each item to mark it complete:</p>
         <div class="checklist">
           <div class="chk-item" onclick="checkItem(this)">
             <div class="chk-box">&#10003;</div>
@@ -467,26 +507,34 @@ ps -ef | grep -i <span class="num">22573</span></div>
           </div>
           <div class="chk-item" onclick="checkItem(this)">
             <div class="chk-box">&#10003;</div>
-            <div class="chk-txt">Program name and user verified using the ABL command for both PIDs (Step 05)</div>
+            <div class="chk-txt">PID process type confirmed via <code style="font-family:'Courier New',monospace;font-size:11px">ps -ef | grep</code> (Step 05)</div>
           </div>
           <div class="chk-item" onclick="checkItem(this)">
             <div class="chk-box">&#10003;</div>
-            <div class="chk-txt">PID process type confirmed via <code style="font-family:'Courier New',monospace;font-size:11px">ps -ef | grep</code> command (Step 06)</div>
+            <div class="chk-txt">If as-mrp: Program name &amp; user checked via ABL command (Step 05b) and Medline DBA approval obtained</div>
           </div>
           <div class="chk-item" onclick="checkItem(this)">
             <div class="chk-box">&#10003;</div>
-            <div class="chk-txt">Correct case identified and matched to action (Step 07)</div>
+            <div class="chk-txt">Correct case identified and action confirmed (Step 06)</div>
           </div>
           <div class="chk-item" onclick="checkItem(this)">
             <div class="chk-box">&#10003;</div>
-            <div class="chk-txt">If as-mrp (Case 6): Medline DBA approval obtained before proceeding</div>
+            <div class="chk-txt">Protrace generated using <code style="font-family:'Courier New',monospace;font-size:11px">sudo kill -SIGUSR1 &lt;PID&gt;</code> (Step 07)</div>
           </div>
           <div class="chk-item" onclick="checkItem(this)">
             <div class="chk-box">&#10003;</div>
-            <div class="chk-txt">If browse process (Case 5): End user informed and approval received</div>
+            <div class="chk-txt">Protrace file moved to <code style="font-family:'Courier New',monospace;font-size:11px">/ext2/backup/monitoring/scanner/</code> (Step 07)</div>
           </div>
         </div>
-        <div class="ibox green" style="margin-top:10px"><span class="ico">&#9989;</span><span>Once all items are confirmed, proceed with disconnecting the identified PID as per the case. Confirm the lock is released after disconnection.</span></div>
+
+        <div class="sec-lbl" style="margin-top:14px">Disconnect command</div>
+        <p class="bd">Run the following script to disconnect the PID. Replace <code style="font-family:'Courier New',monospace;color:#79c0ff;font-size:12px">&lt;pid&gt;</code> with the actual blocker PID number:</p>
+        <div class="code"><span class="cm"># Disconnect the blocker PID using the disconnect script</span>
+/ext1/home/mfgpro/user_disconnect_QAD.sh &lt;pid&gt;
+
+<span class="cm"># Example:</span>
+/ext1/home/mfgpro/user_disconnect_QAD.sh <span class="num">22573</span></div>
+        <div class="ibox green"><span class="ico">&#9989;</span><span>After running the script, confirm the lock is no longer appearing in the log file and the waiter session has resumed.</span></div>
       </div>
     </div>
 
@@ -504,18 +552,18 @@ ps -ef | grep -i <span class="num">22573</span></div>
       </div>
       <div class="card-body">
         <p class="bd">After the PID is disconnected, confirm the lock is no longer in the log, then resume monitoring <code style="font-family:'Courier New',monospace;color:#58a6ff;font-size:12px">/tmp/locking/qad_lock_mon.log</code> across all shifts for the next alert.</p>
-        <div class="ibox blue" style="margin-top:10px"><span class="ico">&#128260;</span><span>Cycle complete: Monitor &#8594; Alert &#8594; Threshold &#8594; ABL Trace &#8594; Verify Program &#8594; Grep PID &#8594; Identify Case &#8594; Disconnect &#8594; Confirm &#8594; Monitor</span></div>
+        <div class="ibox blue" style="margin-top:10px"><span class="ico">&#128260;</span><span>Cycle complete: Monitor &#8594; Alert &#8594; Threshold &#8594; ABL Trace &#8594; Grep PID &#8594; [as-mrp: Check Program] &#8594; Identify Case &#8594; Protrace &amp; Move &#8594; Disconnect &#8594; Confirm &#8594; Monitor</span></div>
       </div>
     </div>
 
     <div class="foot">
-      Lock Release SOP &nbsp;&middot;&nbsp; Medline Production &nbsp;&middot;&nbsp; All Shifts &nbsp;&middot;&nbsp; Threshold: 180s &nbsp;&middot;&nbsp; 9 Steps &middot; 6 Cases
+      Lock Release SOP &nbsp;&middot;&nbsp; All Shifts &nbsp;&middot;&nbsp; Threshold: 180s &nbsp;&middot;&nbsp; 9 Steps &middot; 6 Cases
     </div>
   </main>
 </div>
 
 <script>
-  var allCards = ['s1','s2','s3','s4','s5','s6','s7','s8','s9'];
+  var allCards = ['s1','s2','s3','s4','s5','s5b','s6','s7','s8','s9'];
   var totalChk = 6, checkedChk = 0;
 
   function toggle(id) {
