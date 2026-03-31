@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lock Release Process Map</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:#0d1117;color:#e6edf3;min-height:100vh;overflow-x:hidden}
+
+  /* ── HEADER ── */
+  .header{background:#161b22;border-bottom:1px solid #30363d;padding:16px 24px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100}
+  .header-icon{width:38px;height:38px;background:#0d1f33;border:1.5px solid #58a6ff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+  .header h1{font-size:16px;font-weight:600;color:#e6edf3}
+  .header p{font-size:11px;color:#6e7681;margin-top:2px;font-family:'Courier New',monospace}
+  .header-tags{margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .tag{font-size:10px;font-family:'Courier New',monospace;background:#21262d;border:1px solid #30363d;color:#8b949e;padding:3px 9px;border-radius:12px;white-space:nowrap}
+  .tag.green{border-color:#238636;color:#3fb950;background:#0d1f10}
+
+  /* ── LAYOUT ── */
+  .layout{display:flex;min-height:calc(100vh - 61px)}
+
+  /* ── SIDEBAR ── */
+  .sidebar{width:230px;flex-shrink:0;background:#161b22;border-right:1px solid #30363d;padding:16px 0;position:sticky;top:61px;height:calc(100vh - 61px);overflow-y:auto}
+  .sidebar-label{font-size:10px;font-weight:600;color:#6e7681;text-transform:uppercase;letter-spacing:.08em;padding:0 16px 8px}
+  .nav-item{display:flex;align-items:center;gap:8px;padding:7px 16px;cursor:pointer;border-left:2px solid transparent;font-size:12px;color:#8b949e;transition:all .15s;user-select:none}
+  .nav-item:hover{background:#21262d;color:#e6edf3}
+  .nav-item.active{background:#0d1f33;border-left-color:#58a6ff;color:#58a6ff}
+  .nav-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;border:1.5px solid currentColor}
+  .nav-dot.f{background:currentColor}
+  .nav-num{font-family:'Courier New',monospace;font-size:10px;color:#6e7681;margin-left:auto}
+
+  /* ── MAIN ── */
+  .main{flex:1;padding:24px;max-width:860px}
+
+  /* ── STEP CARDS ── */
+  .card{background:#161b22;border:1px solid #30363d;border-radius:10px;margin-bottom:6px;overflow:hidden;transition:border-color .2s;scroll-margin-top:80px}
+  .card:hover{border-color:#484f58}
+  .card.open{border-color:var(--ac,#58a6ff)}
+  .card-head{display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer;user-select:none}
+  .step-badge{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Courier New',monospace;font-size:11px;font-weight:700;flex-shrink:0;border:1.5px solid}
+  .card-info{flex:1}
+  .card-title{font-size:13px;font-weight:600;color:#e6edf3}
+  .card-sub{font-size:11px;color:#6e7681;margin-top:2px;font-family:'Courier New',monospace}
+  .chevron{color:#6e7681;font-size:10px;transition:transform .2s}
+  .card.open .chevron{transform:rotate(180deg)}
+  .card-body{display:none;padding:0 18px 18px;border-top:1px solid #30363d;padding-top:14px}
+  .card.open .card-body{display:block}
+
+  /* badge colors */
+  .b-blue{background:#0d1f33;border-color:#58a6ff;color:#58a6ff}
+  .b-amber{background:#1e1700;border-color:#d29922;color:#d29922}
+  .b-red{background:#1f0c0c;border-color:#f85149;color:#f85149}
+  .b-purple{background:#180d3a;border-color:#a371f7;color:#a371f7}
+  .b-green{background:#0d1f10;border-color:#3fb950;color:#3fb950}
+  .b-gray{background:#21262d;border-color:#484f58;color:#8b949e}
+
+  /* ── CODE BLOCK ── */
+  .code{background:#010409;border:1px solid #30363d;border-left:3px solid #58a6ff;border-radius:6px;padding:12px 16px;font-family:'Courier New',monospace;font-size:12px;color:#a5d6ff;line-height:1.7;margin:10px 0;overflow-x:auto;white-space:pre}
+  .code .kw{color:#ff7b72}
+  .code .cm{color:#8b949e;font-style:italic}
+  .code .num{color:#79c0ff}
+
+  /* ── INFO BOXES ── */
+  .ibox{border-radius:7px;padding:10px 14px;margin:8px 0;border:1px solid;font-size:12px;line-height:1.65;display:flex;gap:10px;align-items:flex-start}
+  .ibox .ico{flex-shrink:0;font-size:14px;margin-top:1px}
+  .ibox.blue{background:#0d1f33;border-color:#1f3a5f;color:#9ecbff}
+  .ibox.amber{background:#1e1700;border-color:#3d2e00;color:#f0c674}
+  .ibox.red{background:#1f0c0c;border-color:#3d1212;color:#ff9492}
+  .ibox.green{background:#0d1f10;border-color:#1a3a20;color:#7ee787}
+  .ibox.purple{background:#180d3a;border-color:#2d1f5e;color:#d2a8ff}
+
+  /* ── BODY TEXT ── */
+  p.bd{font-size:13px;color:#8b949e;line-height:1.7;margin:6px 0}
+  p.bd strong{color:#e6edf3;font-weight:600}
+  .sec-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6e7681;margin:12px 0 6px}
+
+  /* ── THRESHOLD VISUAL ── */
+  .thresh-wrap{background:#010409;border:1px solid #30363d;border-radius:8px;padding:14px;margin:10px 0}
+  .thresh-row{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .thresh-lbl{font-family:'Courier New',monospace;font-size:10px;color:#6e7681;width:26px;flex-shrink:0}
+  .thresh-track{flex:1;height:7px;background:#21262d;border-radius:4px;overflow:hidden;position:relative}
+  .thresh-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#3fb950 0%,#d29922 55%,#f85149 85%,#f85149 100%);width:0;transition:width 1.2s ease}
+  .thresh-pin{position:absolute;top:-5px;width:2px;height:17px;background:#f85149;border-radius:1px;left:55%}
+  .thresh-tag{font-family:'Courier New',monospace;font-size:10px;padding:2px 8px;border-radius:4px;white-space:nowrap;background:#1f0c0c;color:#f85149;border:1px solid #3d1212}
+
+  /* ── DECISION BRANCHES ── */
+  .branches{display:flex;gap:8px;margin:10px 0;flex-wrap:wrap}
+  .branch{flex:1;min-width:150px;border-radius:7px;padding:11px 13px;border:1px solid;font-size:12px;line-height:1.6}
+  .branch .bl{font-weight:700;font-family:'Courier New',monospace;font-size:10px;margin-bottom:5px}
+  .branch.go{background:#0d1f10;border-color:#238636;color:#7ee787}.branch.go .bl{color:#3fb950}
+  .branch.maybe{background:#1e1700;border-color:#9e6a03;color:#f0c674}.branch.maybe .bl{color:#d29922}
+  .branch.stop{background:#1f0c0c;border-color:#da3633;color:#ff9492}.branch.stop .bl{color:#f85149}
+
+  /* ── CASE CARDS ── */
+  .cases{display:flex;flex-direction:column;gap:8px;margin:10px 0}
+  .case{display:flex;border-radius:8px;overflow:hidden;border:1px solid #30363d}
+  .case-tag{width:80px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;font-family:'Courier New',monospace;padding:8px}
+  .case-body2{flex:1;padding:10px 14px;background:#161b22}
+  .case-title3{font-size:13px;font-weight:600;color:#e6edf3;margin-bottom:4px}
+  .case-detail{font-size:12px;color:#8b949e;line-height:1.6;margin-bottom:6px}
+  .case-action{display:inline-block;font-size:11px;font-family:'Courier New',monospace;padding:3px 10px;border-radius:5px}
+
+  /* case color themes */
+  .ct-blue .case-tag{background:#0d1f33;color:#58a6ff;border-right:2px solid #58a6ff}
+  .ct-blue .case-action{background:#0d1f33;color:#58a6ff}
+  .ct-purple .case-tag{background:#180d3a;color:#a371f7;border-right:2px solid #a371f7}
+  .ct-purple .case-action{background:#180d3a;color:#a371f7}
+  .ct-amber .case-tag{background:#1e1700;color:#d29922;border-right:2px solid #d29922}
+  .ct-amber .case-action{background:#1e1700;color:#d29922}
+  .ct-teal .case-tag{background:#0d2220;color:#39d353;border-right:2px solid #39d353}
+  .ct-teal .case-action{background:#0d2220;color:#39d353}
+  .ct-red .case-tag{background:#1f0c0c;color:#f85149;border-right:2px solid #f85149}
+  .ct-red .case-action{background:#1f0c0c;color:#f85149}
+  .ct-violet .case-tag{background:#1a0a3a;color:#f0abfc;border-right:2px solid #d946ef}
+  .ct-violet .case-action{background:#1a0a3a;color:#f0abfc}
+
+  /* ── CHECKLIST ── */
+  .checklist{display:flex;flex-direction:column;gap:6px;margin:10px 0}
+  .chk-item{display:flex;align-items:flex-start;gap:10px;background:#21262d;border-radius:7px;padding:9px 12px;cursor:pointer;border:1px solid #30363d;transition:border-color .15s}
+  .chk-item:hover{border-color:#484f58}
+  .chk-item.checked{background:#0d1f10;border-color:#238636}
+  .chk-box{width:18px;height:18px;border-radius:4px;border:1.5px solid #484f58;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .15s;margin-top:1px}
+  .chk-item.checked .chk-box{background:#238636;border-color:#3fb950;color:#fff}
+  .chk-txt{font-size:12px;color:#8b949e;line-height:1.55;flex:1}
+  .chk-item.checked .chk-txt{color:#7ee787}
+
+  /* ── CONNECTOR ── */
+  .conn{height:20px;display:flex;justify-content:flex-start;padding-left:30px;margin:1px 0}
+  .conn-line{width:2px;background:linear-gradient(#484f58,#30363d);border-radius:1px}
+
+  /* ── PROGRESS BAR ── */
+  .progress-bar{background:#21262d;border-radius:20px;height:4px;margin:0 16px 12px;overflow:hidden}
+  .progress-fill{height:100%;background:linear-gradient(90deg,#58a6ff,#3fb950);border-radius:20px;transition:width .4s ease;width:0}
+
+  /* ── FOOTER ── */
+  .foot{margin-top:32px;padding:16px;border-top:1px solid #30363d;text-align:center;font-size:11px;color:#6e7681;font-family:'Courier New',monospace}
+
+  /* ── ALERT STRIP ── */
+  .alert{background:#1f0c0c;border:1px solid #3d1212;border-left:3px solid #f85149;border-radius:0 7px 7px 0;padding:9px 13px;font-size:12px;color:#ff9492;margin:8px 0;display:flex;align-items:flex-start;gap:8px;line-height:1.6}
+  .alert .ico{flex-shrink:0;font-size:14px}
+
+  @media(max-width:700px){.sidebar{display:none}.main{padding:14px}.branches{flex-direction:column}}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-icon">&#128274;</div>
+  <div>
+    <h1>Lock Release Process Map</h1>
+    <p>/tmp/locking/qad_lock_mon.log &nbsp;&middot;&nbsp; Medline Production</p>
+  </div>
+  <div class="header-tags">
+    <span class="tag green">&#9679; All Shifts Active</span>
+    <span class="tag">Threshold: 180s</span>
+    <span class="tag">9 Steps &middot; 6 Cases</span>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-label">Process Steps</div>
+    <div class="nav-item" onclick="openCard('s1',this)" style="color:#58a6ff"><span class="nav-dot f" style="color:#58a6ff"></span>Monitor Log File<span class="nav-num">01</span></div>
+    <div class="nav-item" onclick="openCard('s2',this)" style="--c:#d29922"><span class="nav-dot f" style="color:#d29922"></span>Lock Alert Detected<span class="nav-num">02</span></div>
+    <div class="nav-item" onclick="openCard('s3',this)"><span class="nav-dot f" style="color:#f85149"></span>180s Threshold<span class="nav-num">03</span></div>
+    <div class="nav-item" onclick="openCard('s4',this)"><span class="nav-dot f" style="color:#a371f7"></span>ABL Stack Trace<span class="nav-num">04</span></div>
+    <div class="nav-item" onclick="openCard('s5',this)"><span class="nav-dot f" style="color:#a371f7"></span>Check Program &amp; User<span class="nav-num">05</span></div>
+    <div class="nav-item" onclick="openCard('s6',this)"><span class="nav-dot f" style="color:#a371f7"></span>Grep PID Process<span class="nav-num">06</span></div>
+    <div class="nav-item" onclick="openCard('s7',this)"><span class="nav-dot f" style="color:#d29922"></span>Determine Case<span class="nav-num">07</span></div>
+    <div class="nav-item" onclick="openCard('s8',this)"><span class="nav-dot f" style="color:#3fb950"></span>Disconnect PID<span class="nav-num">08</span></div>
+    <div class="nav-item" onclick="openCard('s9',this)"><span class="nav-dot" style="color:#58a6ff"></span>Resume Monitoring<span class="nav-num">09</span></div>
+    <div style="margin:12px 16px 0">
+      <div style="font-size:10px;color:#6e7681;margin-bottom:4px">Checklist progress</div>
+      <div class="progress-bar" style="margin:0"><div class="progress-fill" id="prog"></div></div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+    <p style="font-size:12px;color:#6e7681;margin-bottom:14px">Click any step to expand details &nbsp;&#8595; &nbsp;&nbsp; Tap checklist items to track progress</p>
+
+    <!-- ── STEP 1 ────────────────────────────────── -->
+    <div class="card" id="s1" style="--ac:#58a6ff">
+      <div class="card-head" onclick="toggle('s1')">
+        <div class="step-badge b-blue">01</div>
+        <div class="card-info">
+          <div class="card-title">Monitor log file continuously</div>
+          <div class="card-sub">qad_lock_mon.log &nbsp;&middot;&nbsp; /tmp/locking/ &nbsp;&middot;&nbsp; all shifts</div>
+        </div>
+        <span class="chevron">&#9660;</span>
+      </div>
+      <div class="card-body">
+        <p class="bd">The locking alerts are received in <code style="font-family:'Courier New',monospace;color:#58a6ff;font-size:12px">/tmp/locking/qad_lock_mon.log</code>. This file is monitored <strong>continuously across all shifts</strong> for any signs of locking alerts.</p>
+        <div class="code">/tmp/locking/qad_lock_mon.log</div>
+        <div class="ibox blue"><span class="ico">&#128193;</span><span>No action required until a lock alert appears. Monitoring is passive until an alert is recorded in the file.</span></div>
+      </div>
+    </div>
+
+    <div class="conn"><div class="conn-line"></div></div>
+
+    <!-- ── STEP 2 ────────────────────────────────── -->
+    <div class="card" id="s2" style="--ac:#d29922">
+      <div class="card-head" onclick="toggle('s2')">
+        <div class="step-badge b-amber">02</div>
+        <div class="card-info">
+          <div class="card-title">Lock alert detected in log</div>
+          <div class="card-sub">Record updated &mdash; Held time, Usr, PID, Table, Blocker info</div>
+        </div>
+        <span class="chevron">&#9660;</span>
+      </div>
+      <div class="card-body">
+        <p class="bd">When a lock occurs, the lock monitor script updates the log file. Key fields in each alert:</p>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0">
+          <span style="background:#21262d;border:1px solid #30363d;border-radius:5px;padding:3px 10px;font-size:11px;color:#8b949e;font-family:'Courier New',monospace">Held (seconds)</span>
+          <span style="background:#21262d;border:1px solid #30363d;border-radius:5px;padding:3px 10px;font-size:11px;color:#8b949e;font-family:'Courier New',monospace">Usr / PID (waiter)</span>
+          <span style="background:#21262d;border:1px solid #30363d;border-radius:5px;padding:3px 10px;font-size:11px;color:#8b949e;font-family:'Courier New',monospace">Trans ID</span>
+          <span style="background:#21262d;border:1px solid #30363d;border-radius:5px;padding:3px 10px;font-size:11px;color:#8b949e;font-family:'Courier New',monospace">Table / RECID</span>
+          <span style="background:#0d1f33;border:1px solid #1f3a5f;border-radius:5px;padding:3px 10px;font-size:11px;color:#58a6ff;font-family:'Courier New',monospace">Blocking Usr / PID (blocker)</span>
+        </div>
+        <div class="sec-lbl">Sample log entry</div>
+        <div class="code"><span class="cm"># Waiter waiting, Blocker holding the lock</span>
+Held > :0 sec, Usr <span class="num">308</span> PID <span class="num">22573</span> Trans <span class="num">1743690315</span> Table code_mstr
+RECID <span class="num">1307660250</span> (ABL) Blocking Usr <span class="num">245</span> PID <span class="num">1658</span> (ABL)
+
+Held > :0 sec, Usr <span class="num">308</span> PID <span class="num">22573</span> Trans <span class="num">1743789023</span> Table code_mstr
+RECID <span class="num">1307660250</span> (ABL) Blocking Usr <span class="num">378</span> PID <span class="num">30298</span> (ABL)</div>
+        <div class="ibox amber"><span class="ico">&#9888;</span><span><strong>Blocker PID</strong> is the session holding the lock — this is the candidate for disconnection. <strong>Waiter PID</strong> is the session waiting to get access.</span></div>
+      </div>
+    </div>
+
+    <div class="conn"><div class="conn-line"></div></div>
+
+    <!-- ── STEP 3 ────────────────────────────────── -->
+    <div class="card" id="s3" style="--ac:#f85149">
+      <div class="card-head" onclick="toggle('s3')">
+        <div class="step-badge b-red">03</div>
+        <div class="card-info">
+          <div class="card-title">180-second threshold decision</div>
+          <div class="card-sub">Auto-trigger at 180s &nbsp;&middot;&nbsp; OR explicit Medline request</div>
+        </div>
+        <span class="chevron">&#9660;</span>
+      </div>
+      <div class="card-body">
+        <div class="thresh-wrap">
+          <div style="font-family:'Courier New',monospace;font-size:10px;color:#6e7681;margin-bottom:10px">LOCK DURATION THRESHOLD INDICATOR</div>
+          <div class="thresh-row">
+            <span class="thresh-lbl">0s</span>
+            <div class="thresh-track">
+              <div class="thresh-fill" id="tfill"></div>
+              <div class="thresh-pin"></div>
+            </div>
+            <span class="thresh-tag">180s &#8594; ACT</span>
+          </div>
+          <div style="padding-left:36px;font-size:11px;color:#6e7681;font-family:'Courier New',monospace">
+            &lt; 180s: Continue monitoring &nbsp;&#124;&nbsp; &#8805; 180s: Begin disconnect process
+          </div>
+        </div>
+        <div class="branches">
+          <div class="branch go">
+            <div class="bl">&#9650; THRESHOLD CROSSED (&#8805;180s)</div>
+            Lock monitor script updates file with protrace details of both PIDs. Proceed immediately to Step 04. Do not delay.
+          </div>
+          <div class="branch maybe">
+            <div class="bl">&#128100; EXPLICIT MEDLINE REQUEST</div>
+            If Medline personnel explicitly request disconnection before 180s, proceed to Step 04 immediately without waiting.
+          </div>
+          <div class="branch stop">
+            <div class="bl">&#10007; NOT YET CROSSED</div>
+            Lock is under 180s, no Medline request. Continue monitoring the log. Return to Step 02.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="conn"><div class="conn-line"></div></div>
+
+    <!-- ── STEP 4 ────────────────────────────────── -->
+    <div class="card" id="s4" style="--ac:#a371f7">
+      <div class="card-head" onclick="toggle('s4')">
+        <div class="step-badge b-purple">04</div>
+        <div class="card-info">
+          <div class="card-title">Check ABL Stack Trace (protrace)</div>
+          <div class="card-sub">Identify program executed by blocker &amp; waiter PIDs</div>
+        </div>
+        <span class="chevron">&#9660;</span>
+      </div>
+      <div class="card-body">
+        <p class="bd">Once threshold is crossed, the lock monitor script adds protrace details to the log. Check the <strong>ABL Stack Trace</strong> section to identify the program running under both PIDs.</p>
+        <div class="ibox purple"><span class="ico">&#128270;</span><span>The line marked with <strong>--&gt;</strong> is the currently executing program. Note the program names for both the blocker and waiter before proceeding to Step 05.</span></div>
+        <div class="sec-lbl">Sample ABL Stack Trace</div>
+        <div class="code"><span class="kw">** ABL Stack Trace **</span>
+
+<span class="kw">--&gt;</span> us/av/avmkdrp7.r at line <span class="num">760</span>
+    (/extl/prod/2017ee/dist/mfg-customizations/us/av/avmkdrp7.r)
+    us/av/avwinrun.p at line <span class="num">3704</span>
+    (/extl/prod/2017ee/dist/mfg-customizations/us/av/avwinrun.r)
+    us/av/avtrig.p at line <span class="num">4317</span>
+    (/extl/prod/2017ee/dist/mfg-customizations/us/av/avtrig.r)
+    us/gp/gpwinrun.p at line <span class="num">558</span>
+    (/extl/prod/2017ee/dist/mfg-customizations/us/gp/gpwinrun.r)
+    mfwb0la.p at line <span class="num">9885</span>
+    (/extl/prod/2017ee/dist/mfg/mfwb0la.r)
+    com/qad/qra/core/ClientBootstrap.p at line <span class="num">61</span></div>
+      </div>
+    </div>
+
+    <div class="conn"><div class="conn-line"></div></div>
+
+    <!-- ── STEP 5 ────────────────────────────────── -->
+    <div class="card" id="s5" style="--ac:#a371f7">
+      <div class="card-head" onclick="toggle('s5')">
+        <div class="step-badge b-purple">05</div>
+        <div class="card-info">
+          <div class="card-title">Check program name &amp; user — MANDATORY</div>
+          <div class="card-sub">Run ABL command before disconnecting any PID</div>
+        </div>
+        <span class="chevron">&#9660;</span>
+      </div>
+      <div class="card-body">
+        <div class="alert"><span class="ico">&#128680;</span><span><strong>This step is mandatory and must never be skipped.</strong> Always verify the program name and user ID before disconnecting. Run the command for <strong>both the blocker and waiter PIDs</strong>.</span></div>
+        <p class="bd" style="margin-top:10px">Replace <code style="font-family:'Courier New',monospace;color:#79c0ff;font-size:12px">8314</code> with the actual PID number of the blocker or waiter:</p>
+        <div class="sec-lbl">ABL Command &mdash; Check Program Name &amp; User</div>
+        <div class="code"><span class="cm">/* Replace 8314 with the actual PID number */</span>
+<span class="kw">FIND FIRST</span> _connect <span class="kw">where</span> _Connect-Pid = <span class="num">8314</span> <span class="kw">no-lock no-error</span>.
+<span class="kw">if available</span> _connect <span class="kw">then do</span>:
+  <span class="kw">find last</span> mon_mstr <span class="kw">where</span> mon__qadi01 = _Connect-Usr <span class="kw">no-lock no-error</span>.
+  <span class="kw">message</span> mon_userid mon_program .
+<span class="kw">end</span>.</div>
+        <div class="ibox blue"><span class="ico">&#128203;</span><span><strong>mon_userid</strong> &mdash; the logged-in user of this session&nbsp;&nbsp;|&nbsp;&nbsp;<strong>mon_program</strong> &mdash; the program currently running. Cross-reference with the ABL stack trace from Step 04.</span></div>
+      </div>
+    </div>
+
+    <div class="conn"><div class="conn-line"></div></div>
+
+    <!-- ── STEP 6 ────────────────────────────────── -->
+    <div class="card" id="s6" style="--ac:#a371f7">
+      <div class="card-head" onclick="toggle('s6')">
+        <div class="step-badge b-purple">06</div>
+        <div class="card-info">
+          <div class="card-title">Grep process details of PIDs</div>
+          <div class="card-sub">ps -ef | grep &lt;PID&gt; &nbsp;&mdash;&nbsp; run for both blocker &amp; waiter</div>
+        </div>
+        <span class="chevron">&#9660;</span>
+      </div>
+      <div class="card-body">
+        <p class="bd">Use the following OS command to identify the process type of both the blocker and the waiter PIDs. This is the key input for determining which case applies in Step 07.</p>
+        <div class="code"><span class="cm"># Run for BOTH blocker and waiter PIDs</span>
+ps -ef | grep -i &lt;PID&gt;
+
+<span class="cm"># Example:</span>
+ps -ef | grep -i <span class="num">22573</span></div>
+        <p class="bd" style="margin-top:8px">Look for the process type in the output:</p>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0">
+          <span style="background:#0d1f33;border:1px solid #1f3a5f;border-radius:5px;padding:4px 12px;font-size:11px;color:#58a6ff;font-family:'Courier New',monospace">uiprod</span>
+          <span style="background:#180d3a;border:1px solid #2d1f5e;border-radius:5px;padding:4px 12px;font-size:11px;color:#a371f7;font-family:'Courier New',monospace">mfgbatch</span>
+          <span style="background:#1e1700;border:1px solid #3d2e00;border-radius:5px;padding:4px 12px;font-size:11px;color:#d29922;font-family:'Courier New',monospace">appserver agent</span>
+          <span style="background:#1f0c0c;border:1px solid #3d1212;border-radius:5px;padding:4px 12px;font-size:11px;color:#f85149;font-family:'Courier New',monospace">as-mrp &#9733;</span>
+        </div>
+        <div class="ibox amber"><span class="ico">&#9888;</span><span><strong>as-mrp</strong> is a special case (Case 6) &mdash; if both PIDs are as-mrp, contact the Medline DBA before taking any action.</span></div>
+      </div>
+    </div>
+
+    <div class="conn"><div class="conn-line"></div></div>
+
+    <!-- ── STEP 7 ────────────────────────────────── -->
+    <div class="card" id="s7" style="--ac:#d29922">
+      <div class="card-head" onclick="toggle('s7')">
+        <div class="step-badge b-amber">07</div>
+        <div class="card-info">
+          <div class="card-title">Determine the case &amp; take action</div>
+          <div class="card-sub">Match blocker &amp; waiter process types to one of 6 cases</div>
+        </div>
+        <span class="chevron">&#9660;</span>
+      </div>
+      <div class="card-body">
+        <p class="bd" style="margin-bottom:12px">Match the blocker and waiter process types to the correct case below and follow the prescribed action:</p>
+
+        <div class="cases">
+          <div class="case ct-blue">
+            <div class="case-tag">CASE 1</div>
+            <div class="case-body2">
+              <div class="case-title3">Both sessions are uiprod</div>
+              <div class="case-detail">Blocker = <strong style="color:#e6edf3">uiprod</strong> &nbsp;&nbsp;|&nbsp;&nbsp; Waiter = <strong style="color:#e6edf3">uiprod</strong></div>
+              <span class="case-action">&#8594; Disconnect the blocker PID directly</span>
+            </div>
+          </div>
+
+          <div class="case ct-purple">
+            <div class="case-tag">CASE 2</div>
+            <div class="case-body2">
+              <div class="case-title3">Blocker is uiprod &mdash; Waiter is mfgbatch</div>
+              <div class="case-detail">Blocker = <strong style="color:#e6edf3">uiprod</strong> &nbsp;&nbsp;|&nbsp;&nbsp; Waiter = <strong style="color:#e6edf3">mfgbatch</strong></div>
+              <span class="case-action">&#8594; Disconnect the blocker PID</span>
+            </div>
+          </div>
+
+          <div class="case ct-amber">
+            <div class="case-tag">CASE 3</div>
+            <div class="case-body2">
+              <div class="case-title3">Both sessions are mfgbatch</div>
+              <div class="case-detail">Blocker = <strong style="color:#e6edf3">mfgbatch</strong> &nbsp;&nbsp;|&nbsp;&nbsp; Waiter = <strong style="color:#e6edf3">mfgbatch</strong><br>Check which batch job runs most frequently.</div>
+              <span class="case-action">&#8594; Disconnect the more frequent one</span>
+            </div>
+          </div>
+
+          <div class="case ct-teal">
+            <div class="case-tag">CASE 4</div>
+            <div class="case-body2">
+              <div class="case-title3">Blocker is uiprod &mdash; Waiter is appserver agent</div>
+              <div class="case-detail">Blocker = <strong style="color:#e6edf3">uiprod</strong> &nbsp;&nbsp;|&nbsp;&nbsp; Waiter = <strong style="color:#e6edf3">appserver agent</strong></div>
+              <span class="case-action">&#8594; Disconnect the blocker PID</span>
+            </div>
+          </div>
+
+          <div class="case ct-red">
+            <div class="case-tag">CASE 5</div>
+            <div class="case-body2">
+              <div class="case-title3">Both sessions are appserver agents</div>
+              <div class="case-detail">Blocker = <strong style="color:#e6edf3">appserver agent</strong> &nbsp;&nbsp;|&nbsp;&nbsp; Waiter = <strong style="color:#e6edf3">appserver agent</strong><br>Check log files of the appserver instances to identify process type:</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+                <div style="flex:1;min-width:160px;background:#21262d;border:1px solid #3d1212;border-radius:6px;padding:8px 10px">
+                  <div style="font-size:11px;font-weight:700;color:#f85149;margin-bottom:4px;font-family:'Courier New',monospace">If MSW / PSW process</div>
+                  <div style="font-size:11px;color:#8b949e;line-height:1.5">&#8594; Inform Medline DBA immediately. Do not disconnect without DBA authorization.</div>
+                </div>
+                <div style="flex:1;min-width:160px;background:#21262d;border:1px solid #3d2e00;border-radius:6px;padding:8px 10px">
+                  <div style="font-size:11px;font-weight:700;color:#d29922;margin-bottom:4px;font-family:'Courier New',monospace">If Browse process</div>
+                  <div style="font-size:11px;color:#8b949e;line-height:1.5">&#8594; Inform the end user. Get their approval, then proceed with disconnection.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="case ct-violet">
+            <div class="case-tag">CASE 6 &#9733;</div>
+            <div class="case-body2">
+              <div class="case-title3">Both sessions are as-mrp &mdash; SPECIAL CASE</div>
+              <div class="case-detail">Blocker = <strong style="color:#e6edf3">as-mrp</strong> &nbsp;&nbsp;|&nbsp;&nbsp; Waiter = <strong style="color:#e6edf3">as-mrp</strong> &nbsp;&nbsp; (MRP process &mdash; critical)</div>
+              <div class="alert" style="margin-top:6px"><span class="ico">&#128680;</span><span><strong>Mandatory: Contact Medline DBA before any action.</strong> MRP is a critical planning process. Do not disconnect without explicit DBA confirmation.</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="conn"><div class="conn-line"></div></div>
+
+    <!-- ── STEP 8 ────────────────────────────────── -->
+    <div class="card" id="s8" style="--ac:#3fb950">
+      <div class="card-head" onclick="toggle('s8')">
+        <div class="step-badge b-green">08</div>
+        <div class="card-info">
+          <div class="card-title">Pre-disconnect checklist &amp; execute disconnect</div>
+          <div class="card-sub">Complete all items before disconnecting the PID</div>
+        </div>
+        <span class="chevron">&#9660;</span>
+      </div>
+      <div class="card-body">
+        <p class="bd" style="margin-bottom:10px">Confirm every item below before executing the disconnection. Click each item to mark it complete.</p>
+        <div class="checklist">
+          <div class="chk-item" onclick="checkItem(this)">
+            <div class="chk-box">&#10003;</div>
+            <div class="chk-txt">ABL Stack Trace reviewed for both blocker and waiter PIDs (Step 04)</div>
+          </div>
+          <div class="chk-item" onclick="checkItem(this)">
+            <div class="chk-box">&#10003;</div>
+            <div class="chk-txt">Program name and user verified using the ABL command for both PIDs (Step 05)</div>
+          </div>
+          <div class="chk-item" onclick="checkItem(this)">
+            <div class="chk-box">&#10003;</div>
+            <div class="chk-txt">PID process type confirmed via <code style="font-family:'Courier New',monospace;font-size:11px">ps -ef | grep</code> command (Step 06)</div>
+          </div>
+          <div class="chk-item" onclick="checkItem(this)">
+            <div class="chk-box">&#10003;</div>
+            <div class="chk-txt">Correct case identified and matched to action (Step 07)</div>
+          </div>
+          <div class="chk-item" onclick="checkItem(this)">
+            <div class="chk-box">&#10003;</div>
+            <div class="chk-txt">If as-mrp (Case 6): Medline DBA approval obtained before proceeding</div>
+          </div>
+          <div class="chk-item" onclick="checkItem(this)">
+            <div class="chk-box">&#10003;</div>
+            <div class="chk-txt">If browse process (Case 5): End user informed and approval received</div>
+          </div>
+        </div>
+        <div class="ibox green" style="margin-top:10px"><span class="ico">&#9989;</span><span>Once all items are confirmed, proceed with disconnecting the identified PID as per the case. Confirm the lock is released after disconnection.</span></div>
+      </div>
+    </div>
+
+    <div class="conn"><div class="conn-line"></div></div>
+
+    <!-- ── STEP 9 ────────────────────────────────── -->
+    <div class="card" id="s9" style="--ac:#58a6ff">
+      <div class="card-head" onclick="toggle('s9')">
+        <div class="step-badge b-gray">09</div>
+        <div class="card-info">
+          <div class="card-title">Lock released &mdash; resume monitoring</div>
+          <div class="card-sub">Confirm resolution &middot; return to continuous log monitoring</div>
+        </div>
+        <span class="chevron">&#9660;</span>
+      </div>
+      <div class="card-body">
+        <p class="bd">After the PID is disconnected, confirm the lock is no longer in the log, then resume monitoring <code style="font-family:'Courier New',monospace;color:#58a6ff;font-size:12px">/tmp/locking/qad_lock_mon.log</code> across all shifts for the next alert.</p>
+        <div class="ibox blue" style="margin-top:10px"><span class="ico">&#128260;</span><span>Cycle complete: Monitor &#8594; Alert &#8594; Threshold &#8594; ABL Trace &#8594; Verify Program &#8594; Grep PID &#8594; Identify Case &#8594; Disconnect &#8594; Confirm &#8594; Monitor</span></div>
+      </div>
+    </div>
+
+    <div class="foot">
+      Lock Release SOP &nbsp;&middot;&nbsp; Medline Production &nbsp;&middot;&nbsp; All Shifts &nbsp;&middot;&nbsp; Threshold: 180s &nbsp;&middot;&nbsp; 9 Steps &middot; 6 Cases
+    </div>
+  </main>
+</div>
+
+<script>
+  var allCards = ['s1','s2','s3','s4','s5','s6','s7','s8','s9'];
+  var totalChk = 6, checkedChk = 0;
+
+  function toggle(id) {
+    var c = document.getElementById(id);
+    var isOpen = c.classList.contains('open');
+    allCards.forEach(function(cid) {
+      document.getElementById(cid).classList.remove('open');
+    });
+    document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
+    if (!isOpen) {
+      c.classList.add('open');
+      var idx = allCards.indexOf(id);
+      var navs = document.querySelectorAll('.nav-item');
+      if (navs[idx]) navs[idx].classList.add('active');
+    }
+  }
+
+  function openCard(id, el) {
+    allCards.forEach(function(cid) {
+      document.getElementById(cid).classList.remove('open');
+    });
+    document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
+    document.getElementById(id).classList.add('open');
+    if (el) el.classList.add('active');
+    document.getElementById(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function checkItem(el) {
+    el.classList.toggle('checked');
+    checkedChk = document.querySelectorAll('.chk-item.checked').length;
+    var pct = Math.round((checkedChk / totalChk) * 100);
+    document.getElementById('prog').style.width = pct + '%';
+  }
+
+  // Open step 1 on load + animate threshold bar
+  window.onload = function() {
+    document.getElementById('s1').classList.add('open');
+    document.querySelectorAll('.nav-item')[0].classList.add('active');
+    setTimeout(function() {
+      var tf = document.getElementById('tfill');
+      if (tf) tf.style.width = '55%';
+    }, 400);
+  };
+</script>
+</body>
+</html>
